@@ -1,11 +1,316 @@
-<yahtzee_game>
-<html>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yahtzee Game</title>
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #f5f5f5;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 2.5em;
+}
+
+.player-info {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+}
+
+.player-name {
+    display: flex;
+    align-items: center;
+}
+
+.player-name input {
+    margin-left: 5px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.active-player {
+    margin-left: 10px;
+    color: green;
+    font-weight: bold;
+}
+
+.inactive-player {
+    margin-left: 10px;
+    color: #999;
+}
+
+.game-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.dice-area {
+    flex: 1;
+    min-width: 300px;
+    background-color: #e9f7ef;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.dice-container {
+    display: flex;
+    justify-content: space-around;
+    margin: 20px 0;
+}
+
+.die {
+    width: 50px;
+    height: 50px;
+    background-color: white;
+    border: 2px solid #333;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+@keyframes roll {
+    from { transform: rotateY(0deg) rotateX(0deg); }
+    to { transform: rotateY(360deg) rotateX(360deg); }
+}
+
+.die.rolling {
+    animation: roll 0.5s;
+}
+
+.die.held {
+    background-color: #ffdddd;
+    border-color: #ff5555;
+}
+
+.die:hover {
+    transform: scale(1.05);
+}
+
+.game-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#roll-button {
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#roll-button:hover {
+    background-color: #45a049;
+}
+
+#roll-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+#rolls-left {
+    font-weight: bold;
+}
+
+.scorecard-area {
+    flex: 2;
+    min-width: 400px;
+    background-color: #e6f2ff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.scorecard {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.scorecard th, .scorecard td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+.scorecard th {
+    background-color: #4285f4;
+    color: white;
+}
+
+.scorecard tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.section-header {
+    background-color: #e6e6e6;
+    font-weight: bold;
+}
+
+.total-row, .grand-total-row, .bonus-row, .yahtzee-bonus-row {
+    background-color: #ddd;
+    font-weight: bold;
+}
+
+.grand-total-row {
+    background-color: #b8daff;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.clickable:hover {
+    background-color: #d1e7dd;
+}
+
+.clickable.active-cell {
+    background-color: #a8d8ea;
+}
+
+.message-area {
+    margin: 20px 0;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-left: 5px solid #4285f4;
+    border-radius: 4px;
+}
+
+#new-game-button {
+    display: block;
+    margin: 0 auto;
+    padding: 10px 20px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#new-game-button:hover {
+    background-color: #d32f2f;
+}
+
+#new-series-button {
+    display: block;
+    margin: 10px auto;
+    padding: 8px 16px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#new-series-button:hover {
+    background-color: #1976d2;
+}
+
+#series-score {
+    text-align: center;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.computer-toggle {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.rules-toggle {
+    margin-top: 20px;
+}
+
+#rules-button {
+    width: 100%;
+    padding: 8px;
+    background-color: #555;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#rules-button:hover {
+    background-color: #333;
+}
+
+#rules-section {
+    margin-top: 10px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#rules-section h3 {
+    margin-bottom: 10px;
+}
+
+#rules-section h4 {
+    margin: 15px 0 5px 0;
+}
+
+#rules-section ul {
+    padding-left: 20px;
+}
+
+#rules-section li {
+    margin-bottom: 5px;
+}
+
+.hidden {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .game-area {
+        flex-direction: column;
+    }
+    
+    .dice-area, .scorecard-area {
+        min-width: 100%;
+    }
+}
+</style>
 </head>
 <body>
     <div class="container">
@@ -23,7 +328,10 @@
                 <span id="player2-turn" class="inactive-player">Waiting</span>
             </div>
         </div>
-        
+        <div class="computer-toggle">
+            <label><input type="checkbox" id="vs-computer"> Play vs Computer</label>
+        </div>
+
         <div class="game-area">
             <div class="dice-area">
                 <h2>Dice</h2>
@@ -169,6 +477,8 @@
         </div>
         
         <button id="new-game-button">New Game</button>
+        <button id="new-series-button">New Series</button>
+        <div id="series-score">Series score: 0 - 0</div>
         
         <div class="rules-toggle">
             <button id="rules-button">Show/Hide Rules</button>
@@ -211,284 +521,10 @@
             </div>
         </div>
     </div>
-</body>
-</html>
-</html>
-
-<style>
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-}
-
-body {
-    background-color: #f5f5f5;
-    padding: 20px;
-}
-
-.container {
-    max-width: 1000px;
-    margin: 0 auto;
-    background-color: white;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 20px;
-    font-size: 2.5em;
-}
-
-.player-info {
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 20px;
-    padding: 10px;
-    background-color: #f0f0f0;
-    border-radius: 5px;
-}
-
-.player-name {
-    display: flex;
-    align-items: center;
-}
-
-.player-name input {
-    margin-left: 5px;
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-}
-
-.active-player {
-    margin-left: 10px;
-    color: green;
-    font-weight: bold;
-}
-
-.inactive-player {
-    margin-left: 10px;
-    color: #999;
-}
-
-.game-area {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.dice-area {
-    flex: 1;
-    min-width: 300px;
-    background-color: #e9f7ef;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.dice-container {
-    display: flex;
-    justify-content: space-around;
-    margin: 20px 0;
-}
-
-.die {
-    width: 50px;
-    height: 50px;
-    background-color: white;
-    border: 2px solid #333;
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.die.held {
-    background-color: #ffdddd;
-    border-color: #ff5555;
-}
-
-.die:hover {
-    transform: scale(1.05);
-}
-
-.game-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#roll-button {
-    padding: 8px 16px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-#roll-button:hover {
-    background-color: #45a049;
-}
-
-#roll-button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-}
-
-#rolls-left {
-    font-weight: bold;
-}
-
-.scorecard-area {
-    flex: 2;
-    min-width: 400px;
-    background-color: #e6f2ff;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.scorecard {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.scorecard th, .scorecard td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: center;
-}
-
-.scorecard th {
-    background-color: #4285f4;
-    color: white;
-}
-
-.scorecard tr:nth-child(even) {
-    background-color: #f2f2f2;
-}
-
-.section-header {
-    background-color: #e6e6e6;
-    font-weight: bold;
-}
-
-.total-row, .grand-total-row, .bonus-row, .yahtzee-bonus-row {
-    background-color: #ddd;
-    font-weight: bold;
-}
-
-.grand-total-row {
-    background-color: #b8daff;
-}
-
-.clickable {
-    cursor: pointer;
-}
-
-.clickable:hover {
-    background-color: #d1e7dd;
-}
-
-.clickable.active-cell {
-    background-color: #a8d8ea;
-}
-
-.message-area {
-    margin: 20px 0;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-left: 5px solid #4285f4;
-    border-radius: 4px;
-}
-
-#new-game-button {
-    display: block;
-    margin: 0 auto;
-    padding: 10px 20px;
-    background-color: #f44336;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-#new-game-button:hover {
-    background-color: #d32f2f;
-}
-
-.rules-toggle {
-    margin-top: 20px;
-}
-
-#rules-button {
-    width: 100%;
-    padding: 8px;
-    background-color: #555;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-#rules-button:hover {
-    background-color: #333;
-}
-
-#rules-section {
-    margin-top: 10px;
-    padding: 15px;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-#rules-section h3 {
-    margin-bottom: 10px;
-}
-
-#rules-section h4 {
-    margin: 15px 0 5px 0;
-}
-
-#rules-section ul {
-    padding-left: 20px;
-}
-
-#rules-section li {
-    margin-bottom: 5px;
-}
-
-.hidden {
-    display: none;
-}
-
-@media (max-width: 768px) {
-    .game-area {
-        flex-direction: column;
-    }
-    
-    .dice-area, .scorecard-area {
-        min-width: 100%;
-    }
-}
-</style>
-
 <script>
 // Game state variables
+let seriesState = { gamesPlayed: 0, player1Wins: 0, player2Wins: 0 };
+let vsComputer = false;
 let gameState = {
     currentPlayer: 1,
     rollsLeft: 3,
@@ -539,13 +575,27 @@ const rollButton = document.getElementById('roll-button');
 const rollsLeftSpan = document.getElementById('rolls-left');
 const messageBox = document.getElementById('message-box');
 const newGameButton = document.getElementById('new-game-button');
+const newSeriesButton = document.getElementById('new-series-button');
+const seriesScoreDiv = document.getElementById('series-score');
 const rulesButton = document.getElementById('rules-button');
 const rulesSection = document.getElementById('rules-section');
 const player1TurnIndicator = document.getElementById('player1-turn');
 const player2TurnIndicator = document.getElementById('player2-turn');
+const vsComputerCheckbox = document.getElementById('vs-computer');
 
+const COMPUTER_DELAY = 1200;
 // Initialize the game
 function initGame() {
+    vsComputer = vsComputerCheckbox.checked;
+    if (vsComputer) {
+        document.getElementById('player2').value = 'Computer';
+        document.getElementById('player2').disabled = true;
+    } else {
+        document.getElementById('player2').disabled = false;
+    }
+
+    seriesScoreDiv.textContent = `Series score: ${seriesState.player1Wins} - ${seriesState.player2Wins}`;
+
     gameState = {
         currentPlayer: 1,
         rollsLeft: 3,
@@ -614,7 +664,9 @@ function rollDice() {
     // Roll only the dice that are not held
     for (let i = 0; i < gameState.dice.length; i++) {
         if (!gameState.heldDice[i]) {
+            diceElements[i].classList.add('rolling');
             gameState.dice[i] = Math.floor(Math.random() * 6) + 1;
+            setTimeout(() => diceElements[i].classList.remove('rolling'), 500);
         }
     }
     
@@ -648,9 +700,10 @@ function updateDiceDisplay() {
 // Toggle holding a die
 function toggleHoldDie(index) {
     if (gameState.rollsLeft === 3 || gameState.rollsLeft <= 0 || gameState.gameEnded) return;
-    
+
     gameState.heldDice[index] = !gameState.heldDice[index];
     diceElements[index].classList.toggle('held');
+    showPotentialScores();
 }
 
 // Update the rolls left display
@@ -727,6 +780,187 @@ function hasLargeStraight(counts) {
 }
 
 // Show potential scores in the scorecard
+// Utility functions for computer strategy
+function countDiceValues(dice) {
+    const c = [0, 0, 0, 0, 0, 0, 0];
+    for (const d of dice) c[d]++;
+    return c;
+}
+
+function getOpenBoxes(playerKey) {
+    const opens = {};
+    Object.keys(gameState.scores[playerKey]).forEach(cat => {
+        if (cat !== 'yahtzeeBonus') opens[cat] = gameState.scores[playerKey][cat] === null;
+    });
+    return opens;
+}
+
+function getUpperTotal(playerKey) {
+    const upperCats = ['ones','twos','threes','fours','fives','sixes'];
+    let total = 0;
+    for (const c of upperCats) {
+        const v = gameState.scores[playerKey][c];
+        if (v !== null) total += v;
+    }
+    return total;
+}
+
+function updateHeldDiceClasses() {
+    diceElements.forEach((die, idx) => {
+        if (gameState.heldDice[idx]) die.classList.add('held');
+        else die.classList.remove('held');
+    });
+}
+
+function holdDiceForComputer() {
+    const dice = gameState.dice;
+    const counts = countDiceValues(dice);
+    const open = getOpenBoxes('player2');
+    const rollsLeft = gameState.rollsLeft;
+    const upperTotal = getUpperTotal('player2');
+    const sum = dice.reduce((a,b)=>a+b,0);
+    const hold = [false,false,false,false,false];
+
+    // 2.1 Immediate lock-in patterns
+    if (hasNOfAKind(counts,5) && open['yahtzee']) {
+        gameState.heldDice = [true,true,true,true,true];
+        updateHeldDiceClasses();
+        return;
+    }
+    if (hasLargeStraight(counts) && open['large-straight']) {
+        gameState.heldDice = [true,true,true,true,true];
+        updateHeldDiceClasses();
+        return;
+    }
+    if (hasFullHouse(counts) && open['full-house']) {
+        gameState.heldDice = [true,true,true,true,true];
+        updateHeldDiceClasses();
+        return;
+    }
+
+    if (rollsLeft === 2) {
+        // Four-of-a-kind push for Yahtzee
+        for (let v=1; v<=6; v++) {
+            if (counts[v] === 4 && open['yahtzee']) {
+                for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // Three-of-a-kind logic
+        for (let v=1; v<=6; v++) {
+            if (counts[v] === 3) {
+                const upperName = ['','ones','twos','threes','fours','fives','sixes'][v];
+                if (open[upperName] && upperTotal < 60) {
+                    for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                    gameState.heldDice = hold;
+                    updateHeldDiceClasses();
+                    return;
+                } else if (open['three-kind'] || open['full-house']) {
+                    for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                    gameState.heldDice = hold;
+                    updateHeldDiceClasses();
+                    return;
+                }
+            }
+        }
+        // Straight setup
+        const unique = Array.from(new Set(dice)).sort();
+        for (let i=0;i<=unique.length-4;i++) {
+            const seq = unique.slice(i,i+4);
+            if (seq[3]-seq[0]===3 && open['large-straight']) {
+                for (let j=0;j<5;j++) if (seq.includes(dice[j])) hold[j]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        for (let i=0;i<=unique.length-3;i++) {
+            const seq = unique.slice(i,i+3);
+            if (seq[2]-seq[0]===2 && open['small-straight']) {
+                for (let j=0;j<5;j++) if (seq.includes(dice[j])) hold[j]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // Two pairs
+        const pairValues = [];
+        for (let v=1; v<=6; v++) if (counts[v] >=2) pairValues.push(v);
+        if (pairValues.length >=2) {
+            pairValues.sort((a,b)=>b-a);
+            const target = pairValues[0];
+            const upperName = ['','ones','twos','threes','fours','fives','sixes'][target];
+            if (open[upperName]) {
+                for (let i=0;i<5;i++) if (dice[i]===target) hold[i]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            } else {
+                gameState.heldDice = [false,false,false,false,false];
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // High-value singles for bonus
+        for (const v of [6,5]) {
+            const name = ['','ones','twos','threes','fours','fives','sixes'][v];
+            if (counts[v] >=2 && open[name] && upperTotal < 60) {
+                for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // Otherwise reroll all
+        gameState.heldDice = [false,false,false,false,false];
+        updateHeldDiceClasses();
+        return;
+    }
+
+    if (rollsLeft === 1) {
+        // Upgrade attempts
+        for (let v=1; v<=6; v++) {
+            if (counts[v] === 4) {
+                for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        const unique = Array.from(new Set(dice)).sort();
+        for (let i=0;i<=unique.length-4;i++) {
+            const seq = unique.slice(i,i+4);
+            if (seq[3]-seq[0]===3 && open['large-straight']) {
+                for (let j=0;j<5;j++) if (seq.includes(dice[j])) hold[j]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // Three-of-a-kind finishing
+        for (let v=1; v<=6; v++) {
+            if (counts[v] === 3 && open['three-kind']) {
+                for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // Chance threshold
+        if (open['chance'] && sum >= 23) {
+            gameState.heldDice = [true,true,true,true,true];
+            gameState.rollsLeft = 0;
+            updateHeldDiceClasses();
+            return;
+        }
+        // Otherwise reroll all
+        gameState.heldDice = [false,false,false,false,false];
+        updateHeldDiceClasses();
+        return;
+    }
+}
 function showPotentialScores() {
     if (gameState.rollsLeft === 3) return;
     
@@ -891,6 +1125,10 @@ function nextTurn() {
     
     // Show message for next player
     showMessage(`Player ${gameState.currentPlayer}'s turn. Roll the dice.`);
+
+    if (vsComputer && gameState.currentPlayer === 2) {
+        setTimeout(computerTurn, COMPUTER_DELAY);
+    }
 }
 
 // Update the player turn indicator
@@ -909,6 +1147,92 @@ function updatePlayerTurnIndicator() {
 }
 
 // End the game and show final results
+function computerTurn() {
+    if (!vsComputer || gameState.gameEnded || gameState.currentPlayer !== 2) return;
+
+    const takeAction = () => {
+        if (gameState.rollsLeft === 0) {
+            chooseCategoryForComputer();
+            return;
+        }
+
+        rollDice();
+        holdDiceForComputer();
+
+        if (gameState.rollsLeft === 0) {
+            setTimeout(chooseCategoryForComputer, COMPUTER_DELAY);
+        } else {
+            setTimeout(takeAction, COMPUTER_DELAY);
+        }
+    };
+
+    takeAction();
+}
+
+function chooseCategoryForComputer() {
+    const playerKey = 'player2';
+    const counts = countDiceValues(gameState.dice);
+    const open = getOpenBoxes(playerKey);
+    const sum = gameState.dice.reduce((a,b)=>a+b,0);
+    const upperTotal = getUpperTotal(playerKey);
+    const extraYahtzee = hasNOfAKind(counts,5) && gameState.scores[playerKey].yahtzee === 50;
+    let potentials = calculatePotentialScores();
+
+    if (extraYahtzee) {
+        potentials = Object.assign({}, potentials, {
+            'full-house': 25,
+            'small-straight': 30,
+            'large-straight': 40,
+            'three-kind': sum,
+            'four-kind': sum
+        });
+    }
+
+    const exactOrder = [
+        'yahtzee',
+        'large-straight',
+        'full-house',
+        'four-kind',
+        'small-straight'
+    ];
+
+    for (const cat of exactOrder) {
+        if (open[cat]) {
+            if (extraYahtzee || potentials[cat] > 0) {
+                return scoreCategory(cat);
+            }
+        }
+    }
+
+    const need = Math.max(0, 63 - upperTotal);
+    if (need > 0) {
+        const upperCats = ['sixes','fives','fours','threes','twos','ones'];
+        let choice = null;
+        let pts = 0;
+        for (const cat of upperCats) {
+            if (open[cat]) {
+                const val = {'ones':1,'twos':2,'threes':3,'fours':4,'fives':5,'sixes':6}[cat];
+                const sc = counts[val]*val;
+                if (sc >= need && sc > pts) {
+                    pts = sc;
+                    choice = cat;
+                }
+            }
+        }
+        if (choice) return scoreCategory(choice);
+    }
+
+    if (open['three-kind'] && hasNOfAKind(counts,3)) {
+        if (!open['chance'] || potentials['three-kind'] >= potentials['chance']) return scoreCategory('three-kind');
+    }
+
+    if (open['chance'] && sum >= 20) return scoreCategory('chance');
+
+    const sacrificeOrder = ['ones','twos','threes','fours','small-straight','full-house','three-kind','four-kind','chance','sixes','fives','large-straight','yahtzee'];
+    for (const cat of sacrificeOrder) {
+        if (open[cat]) return scoreCategory(cat);
+    }
+}
 function endGame() {
     gameState.gameEnded = true;
     
@@ -926,10 +1250,36 @@ function endGame() {
         winnerMessage = `Game over! It's a tie with both players scoring ${player1Total} points!`;
     }
     
+    seriesState.gamesPlayed++;
+    if (player1Total > player2Total) {
+        seriesState.player1Wins++;
+    } else if (player2Total > player1Total) {
+        seriesState.player2Wins++;
+    }
+    seriesScoreDiv.textContent = `Series score: ${seriesState.player1Wins} - ${seriesState.player2Wins}`;
+
+    if (seriesState.gamesPlayed >= 5) {
+        let seriesMsg;
+        if (seriesState.player1Wins > seriesState.player2Wins) {
+            seriesMsg = `${document.getElementById('player1').value} wins the series!`;
+        } else if (seriesState.player2Wins > seriesState.player1Wins) {
+            seriesMsg = `${document.getElementById('player2').value} wins the series!`;
+        } else {
+            seriesMsg = 'Series ends in a tie!';
+        }
+        winnerMessage += ' ' + seriesMsg;
+    }
+
     showMessage(winnerMessage);
     
     // Disable roll button
     rollButton.disabled = true;
+}
+
+function resetSeries() {
+    seriesState = { gamesPlayed: 0, player1Wins: 0, player2Wins: 0 };
+    seriesScoreDiv.textContent = 'Series score: 0 - 0';
+    initGame();
 }
 
 // Event Listeners
@@ -942,6 +1292,12 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // New game button click event
     newGameButton.addEventListener('click', initGame);
+
+    // New series button click event
+    newSeriesButton.addEventListener('click', resetSeries);
+
+    // Change of vs computer checkbox
+    vsComputerCheckbox.addEventListener('change', resetSeries);
     
     // Rules button click event
     rulesButton.addEventListener('click', () => {
@@ -978,4 +1334,5 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
-</yahtzee_game>
+</body>
+</html>
