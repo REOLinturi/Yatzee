@@ -220,6 +220,7 @@
 </html>
 </html>
 
+
 <style>
 * {
     box-sizing: border-box;
@@ -316,6 +317,15 @@ h1 {
     font-weight: bold;
     cursor: pointer;
     transition: all 0.2s;
+}
+
+@keyframes roll {
+    from { transform: rotateY(0deg) rotateX(0deg); }
+    to { transform: rotateY(360deg) rotateX(360deg); }
+}
+
+.die.rolling {
+    animation: roll 0.5s;
 }
 
 @keyframes roll {
@@ -471,6 +481,33 @@ h1 {
     margin-bottom: 10px;
 }
 
+#new-series-button {
+    display: block;
+    margin: 10px auto;
+    padding: 8px 16px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#new-series-button:hover {
+    background-color: #1976d2;
+}
+
+#series-score {
+    text-align: center;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.computer-toggle {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
 .rules-toggle {
     margin-top: 20px;
 }
@@ -528,11 +565,222 @@ h1 {
 }
 </style>
 
+</head>
+<body>
+    <div class="container">
+        <h1>Yahtzee</h1>
+        
+        <div class="player-info">
+            <div class="player-name">
+                <label for="player1">Player 1: </label>
+                <input type="text" id="player1" value="Player 1">
+                <span id="player1-turn" class="active-player">Current Turn</span>
+            </div>
+            <div class="player-name">
+                <label for="player2">Player 2: </label>
+                <input type="text" id="player2" value="Player 2">
+                <span id="player2-turn" class="inactive-player">Waiting</span>
+            </div>
+        </div>
+        <div class="computer-toggle">
+            <label><input type="checkbox" id="vs-computer"> Play vs Computer</label>
+        </div>
+
+        <div class="game-area">
+            <div class="dice-area">
+                <h2>Dice</h2>
+                <div class="dice-container">
+                    <div class="die" id="die1" data-index="0">
+                        <div class="die-face">1</div>
+                    </div>
+                    <div class="die" id="die2" data-index="1">
+                        <div class="die-face">1</div>
+                    </div>
+                    <div class="die" id="die3" data-index="2">
+                        <div class="die-face">1</div>
+                    </div>
+                    <div class="die" id="die4" data-index="3">
+                        <div class="die-face">1</div>
+                    </div>
+                    <div class="die" id="die5" data-index="4">
+                        <div class="die-face">1</div>
+                    </div>
+                </div>
+                <div class="game-controls">
+                    <button id="roll-button">Roll Dice</button>
+                    <span id="rolls-left">Rolls left: 3</span>
+                </div>
+            </div>
+            
+            <div class="scorecard-area">
+                <h2>Scorecard</h2>
+                <div class="scorecard-container">
+                    <table class="scorecard">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Player 1</th>
+                                <th>Player 2</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="section-header">
+                                <td colspan="3">Upper Section</td>
+                            </tr>
+                            <tr class="score-row" data-category="ones">
+                                <td>Aces (Ones)</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="score-row" data-category="twos">
+                                <td>Twos</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="score-row" data-category="threes">
+                                <td>Threes</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="score-row" data-category="fours">
+                                <td>Fours</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="score-row" data-category="fives">
+                                <td>Fives</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="score-row" data-category="sixes">
+                                <td>Sixes</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="total-row">
+                                <td>Upper Section Total</td>
+                                <td id="player1-upper-total">0</td>
+                                <td id="player2-upper-total">0</td>
+                            </tr>
+                            <tr class="bonus-row">
+                                <td>Bonus (score 63+ = 35)</td>
+                                <td id="player1-bonus">0</td>
+                                <td id="player2-bonus">0</td>
+                            </tr>
+                            <tr class="section-header">
+                                <td colspan="3">Lower Section</td>
+                            </tr>
+                            <tr class="score-row" data-category="three-kind">
+                                <td>Three of a Kind</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="score-row" data-category="four-kind">
+                                <td>Four of a Kind</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="score-row" data-category="full-house">
+                                <td>Full House</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="score-row" data-category="small-straight">
+                                <td>Small Straight</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="score-row" data-category="large-straight">
+                                <td>Large Straight</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="score-row" data-category="yahtzee">
+                                <td>Yahtzee</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="score-row" data-category="chance">
+                                <td>Chance</td>
+                                <td class="player1-score clickable"></td>
+                                <td class="player2-score clickable"></td>
+                            </tr>
+                            <tr class="yahtzee-bonus-row">
+                                <td>Yahtzee Bonus</td>
+                                <td id="player1-yahtzee-bonus">0</td>
+                                <td id="player2-yahtzee-bonus">0</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td>Lower Section Total</td>
+                                <td id="player1-lower-total">0</td>
+                                <td id="player2-lower-total">0</td>
+                            </tr>
+                            <tr class="grand-total-row">
+                                <td>Grand Total</td>
+                                <td id="player1-grand-total">0</td>
+                                <td id="player2-grand-total">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="message-area" id="message-box">
+            Game started! Player 1's turn. Roll the dice.
+        </div>
+        
+        <button id="new-game-button">New Game</button>
+        <button id="new-series-button">New Series</button>
+        <div id="series-score">Series score: 0 - 0</div>
+        
+        <div class="rules-toggle">
+            <button id="rules-button">Show/Hide Rules</button>
+            <div id="rules-section" class="hidden">
+                <h3>Yahtzee Rules</h3>
+                <p><strong>Objective:</strong> Achieve the highest score by rolling five dice to make specific combinations over 13 rounds.</p>
+                
+                <h4>Game Play:</h4>
+                <ul>
+                    <li>On your turn, you may roll the dice up to three times.</li>
+                    <li>After the first roll, you can choose any dice to re-roll.</li>
+                    <li>After the second roll, you can again choose any dice to re-roll.</li>
+                    <li>After your final roll, you must choose a category to score in.</li>
+                </ul>
+                
+                <h4>Upper Section Scoring:</h4>
+                <ul>
+                    <li>Aces: Sum of all dice showing 1</li>
+                    <li>Twos: Sum of all dice showing 2</li>
+                    <li>Threes: Sum of all dice showing 3</li>
+                    <li>Fours: Sum of all dice showing 4</li>
+                    <li>Fives: Sum of all dice showing 5</li>
+                    <li>Sixes: Sum of all dice showing 6</li>
+                    <li>Bonus: If the total score in the upper section is 63 or more, an additional 35 points are awarded.</li>
+                </ul>
+                
+                <h4>Lower Section Scoring:</h4>
+                <ul>
+                    <li>Three of a Kind: At least three dice showing the same number; score is the total of all five dice.</li>
+                    <li>Four of a Kind: At least four dice showing the same number; score is the total of all five dice.</li>
+                    <li>Full House: Three of one number and two of another; scores 25 points.</li>
+                    <li>Small Straight: Four consecutive numbers; scores 30 points.</li>
+                    <li>Large Straight: Five consecutive numbers; scores 40 points.</li>
+                    <li>Yahtzee: All five dice showing the same number; scores 50 points.</li>
+                    <li>Chance: Any combination; score is the total of all five dice.</li>
+                    <li>Yahtzee Bonus: If a player rolls a second Yahtzee after already scoring 50 in the Yahtzee category, they receive a 100-point bonus.</li>
+                </ul>
+                
+                <p><strong>Game End:</strong> The game concludes after 13 rounds when all players have filled in every category.</p>
+            </div>
+        </div>
+    </div>
 <script>
 // Game state variables
 let seriesState = { gamesPlayed: 0, player1Wins: 0, player2Wins: 0 };
 let vsComputer = false;
 let gameState = {
+
     currentPlayer: 1,
     rollsLeft: 3,
     round: 1,
@@ -580,6 +828,7 @@ let gameState = {
 const diceElements = document.querySelectorAll('.die');
 const rollButton = document.getElementById('roll-button');
 const rollsLeftSpan = document.getElementById('rolls-left');
+
 const messageBox = document.getElementById('message-box');
 const newGameButton = document.getElementById('new-game-button');
 const newSeriesButton = document.getElementById('new-series-button');
@@ -590,9 +839,7 @@ const player1TurnIndicator = document.getElementById('player1-turn');
 const player2TurnIndicator = document.getElementById('player2-turn');
 const vsComputerCheckbox = document.getElementById('vs-computer');
 
-
 const COMPUTER_DELAY = 1200;
-=======
 // Initialize the game
 function initGame() {
     vsComputer = vsComputerCheckbox.checked;
@@ -606,6 +853,8 @@ function initGame() {
     seriesScoreDiv.textContent = `Series score: ${seriesState.player1Wins} - ${seriesState.player2Wins}`;
 
     gameState = {
+
+
         currentPlayer: 1,
         rollsLeft: 3,
         round: 1,
@@ -670,6 +919,7 @@ function initGame() {
 function rollDice() {
     if (gameState.rollsLeft <= 0 || gameState.gameEnded) return;
     
+
     // Roll only the dice that are not held
     for (let i = 0; i < gameState.dice.length; i++) {
         if (!gameState.heldDice[i]) {
@@ -678,6 +928,7 @@ function rollDice() {
             setTimeout(() => diceElements[i].classList.remove('rolling'), 500);
         }
     }
+
     
     // Update dice display
     updateDiceDisplay();
@@ -707,6 +958,7 @@ function updateDiceDisplay() {
 }
 
 // Toggle holding a die
+
 function toggleHoldDie(index) {
     if (gameState.rollsLeft === 3 || gameState.rollsLeft <= 0 || gameState.gameEnded) return;
 
@@ -714,6 +966,7 @@ function toggleHoldDie(index) {
     diceElements[index].classList.toggle('held');
     showPotentialScores();
 }
+
 
 // Update the rolls left display
 function updateRollsLeftDisplay() {
@@ -789,6 +1042,7 @@ function hasLargeStraight(counts) {
 }
 
 // Show potential scores in the scorecard
+
 // Utility functions for computer strategy
 function countDiceValues(dice) {
     const c = [0, 0, 0, 0, 0, 0, 0];
@@ -970,6 +1224,7 @@ function holdDiceForComputer() {
         return;
     }
 }
+
 function showPotentialScores() {
     if (gameState.rollsLeft === 3) return;
     
@@ -1133,12 +1388,11 @@ function nextTurn() {
     updatePlayerTurnIndicator();
     
     // Show message for next player
+
     showMessage(`Player ${gameState.currentPlayer}'s turn. Roll the dice.`);
 
     if (vsComputer && gameState.currentPlayer === 2) {
-
         setTimeout(computerTurn, COMPUTER_DELAY);
-
     }
 }
 
@@ -1156,7 +1410,6 @@ function updatePlayerTurnIndicator() {
         player2TurnIndicator.textContent = 'Current Turn';
     }
 }
-
 
 // End the game and show final results
 function computerTurn() {
@@ -1245,9 +1498,9 @@ function chooseCategoryForComputer() {
         if (open[cat]) return scoreCategory(cat);
     }
 }
-
 function endGame() {
     gameState.gameEnded = true;
+
     
     // Calculate final scores
     const player1Total = parseInt(document.getElementById('player1-grand-total').textContent);
@@ -1263,6 +1516,7 @@ function endGame() {
         winnerMessage = `Game over! It's a tie with both players scoring ${player1Total} points!`;
     }
     
+
     seriesState.gamesPlayed++;
     if (player1Total > player2Total) {
         seriesState.player1Wins++;
@@ -1284,9 +1538,16 @@ function endGame() {
     }
 
     showMessage(winnerMessage);
+
     
     // Disable roll button
     rollButton.disabled = true;
+}
+
+function resetSeries() {
+    seriesState = { gamesPlayed: 0, player1Wins: 0, player2Wins: 0 };
+    seriesScoreDiv.textContent = 'Series score: 0 - 0';
+    initGame();
 }
 
 function resetSeries() {
@@ -1303,6 +1564,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Roll button click event
     rollButton.addEventListener('click', rollDice);
     
+
     // New game button click event
     newGameButton.addEventListener('click', initGame);
 
@@ -1311,6 +1573,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Change of vs computer checkbox
     vsComputerCheckbox.addEventListener('change', resetSeries);
+
     
     // Rules button click event
     rulesButton.addEventListener('click', () => {
@@ -1347,4 +1610,5 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
-</yahtzee_game>
+</body>
+</html>
