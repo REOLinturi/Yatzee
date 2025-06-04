@@ -590,6 +590,9 @@ const player1TurnIndicator = document.getElementById('player1-turn');
 const player2TurnIndicator = document.getElementById('player2-turn');
 const vsComputerCheckbox = document.getElementById('vs-computer');
 
+
+const COMPUTER_DELAY = 1200;
+=======
 // Initialize the game
 function initGame() {
     vsComputer = vsComputerCheckbox.checked;
@@ -786,6 +789,187 @@ function hasLargeStraight(counts) {
 }
 
 // Show potential scores in the scorecard
+// Utility functions for computer strategy
+function countDiceValues(dice) {
+    const c = [0, 0, 0, 0, 0, 0, 0];
+    for (const d of dice) c[d]++;
+    return c;
+}
+
+function getOpenBoxes(playerKey) {
+    const opens = {};
+    Object.keys(gameState.scores[playerKey]).forEach(cat => {
+        if (cat !== 'yahtzeeBonus') opens[cat] = gameState.scores[playerKey][cat] === null;
+    });
+    return opens;
+}
+
+function getUpperTotal(playerKey) {
+    const upperCats = ['ones','twos','threes','fours','fives','sixes'];
+    let total = 0;
+    for (const c of upperCats) {
+        const v = gameState.scores[playerKey][c];
+        if (v !== null) total += v;
+    }
+    return total;
+}
+
+function updateHeldDiceClasses() {
+    diceElements.forEach((die, idx) => {
+        if (gameState.heldDice[idx]) die.classList.add('held');
+        else die.classList.remove('held');
+    });
+}
+
+function holdDiceForComputer() {
+    const dice = gameState.dice;
+    const counts = countDiceValues(dice);
+    const open = getOpenBoxes('player2');
+    const rollsLeft = gameState.rollsLeft;
+    const upperTotal = getUpperTotal('player2');
+    const sum = dice.reduce((a,b)=>a+b,0);
+    const hold = [false,false,false,false,false];
+
+    // 2.1 Immediate lock-in patterns
+    if (hasNOfAKind(counts,5) && open['yahtzee']) {
+        gameState.heldDice = [true,true,true,true,true];
+        updateHeldDiceClasses();
+        return;
+    }
+    if (hasLargeStraight(counts) && open['large-straight']) {
+        gameState.heldDice = [true,true,true,true,true];
+        updateHeldDiceClasses();
+        return;
+    }
+    if (hasFullHouse(counts) && open['full-house']) {
+        gameState.heldDice = [true,true,true,true,true];
+        updateHeldDiceClasses();
+        return;
+    }
+
+    if (rollsLeft === 2) {
+        // Four-of-a-kind push for Yahtzee
+        for (let v=1; v<=6; v++) {
+            if (counts[v] === 4 && open['yahtzee']) {
+                for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // Three-of-a-kind logic
+        for (let v=1; v<=6; v++) {
+            if (counts[v] === 3) {
+                const upperName = ['','ones','twos','threes','fours','fives','sixes'][v];
+                if (open[upperName] && upperTotal < 60) {
+                    for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                    gameState.heldDice = hold;
+                    updateHeldDiceClasses();
+                    return;
+                } else if (open['three-kind'] || open['full-house']) {
+                    for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                    gameState.heldDice = hold;
+                    updateHeldDiceClasses();
+                    return;
+                }
+            }
+        }
+        // Straight setup
+        const unique = Array.from(new Set(dice)).sort();
+        for (let i=0;i<=unique.length-4;i++) {
+            const seq = unique.slice(i,i+4);
+            if (seq[3]-seq[0]===3 && open['large-straight']) {
+                for (let j=0;j<5;j++) if (seq.includes(dice[j])) hold[j]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        for (let i=0;i<=unique.length-3;i++) {
+            const seq = unique.slice(i,i+3);
+            if (seq[2]-seq[0]===2 && open['small-straight']) {
+                for (let j=0;j<5;j++) if (seq.includes(dice[j])) hold[j]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // Two pairs
+        const pairValues = [];
+        for (let v=1; v<=6; v++) if (counts[v] >=2) pairValues.push(v);
+        if (pairValues.length >=2) {
+            pairValues.sort((a,b)=>b-a);
+            const target = pairValues[0];
+            const upperName = ['','ones','twos','threes','fours','fives','sixes'][target];
+            if (open[upperName]) {
+                for (let i=0;i<5;i++) if (dice[i]===target) hold[i]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            } else {
+                gameState.heldDice = [false,false,false,false,false];
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // High-value singles for bonus
+        for (const v of [6,5]) {
+            const name = ['','ones','twos','threes','fours','fives','sixes'][v];
+            if (counts[v] >=2 && open[name] && upperTotal < 60) {
+                for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // Otherwise reroll all
+        gameState.heldDice = [false,false,false,false,false];
+        updateHeldDiceClasses();
+        return;
+    }
+
+    if (rollsLeft === 1) {
+        // Upgrade attempts
+        for (let v=1; v<=6; v++) {
+            if (counts[v] === 4) {
+                for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        const unique = Array.from(new Set(dice)).sort();
+        for (let i=0;i<=unique.length-4;i++) {
+            const seq = unique.slice(i,i+4);
+            if (seq[3]-seq[0]===3 && open['large-straight']) {
+                for (let j=0;j<5;j++) if (seq.includes(dice[j])) hold[j]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // Three-of-a-kind finishing
+        for (let v=1; v<=6; v++) {
+            if (counts[v] === 3 && open['three-kind']) {
+                for (let i=0;i<5;i++) if (dice[i]===v) hold[i]=true;
+                gameState.heldDice = hold;
+                updateHeldDiceClasses();
+                return;
+            }
+        }
+        // Chance threshold
+        if (open['chance'] && sum >= 23) {
+            gameState.heldDice = [true,true,true,true,true];
+            gameState.rollsLeft = 0;
+            updateHeldDiceClasses();
+            return;
+        }
+        // Otherwise reroll all
+        gameState.heldDice = [false,false,false,false,false];
+        updateHeldDiceClasses();
+        return;
+    }
+}
 function showPotentialScores() {
     if (gameState.rollsLeft === 3) return;
     
@@ -952,7 +1136,9 @@ function nextTurn() {
     showMessage(`Player ${gameState.currentPlayer}'s turn. Roll the dice.`);
 
     if (vsComputer && gameState.currentPlayer === 2) {
-        setTimeout(computerTurn, 500);
+
+        setTimeout(computerTurn, COMPUTER_DELAY);
+
     }
 }
 
@@ -971,51 +1157,95 @@ function updatePlayerTurnIndicator() {
     }
 }
 
-// Simple computer turn logic
+
+// End the game and show final results
 function computerTurn() {
     if (!vsComputer || gameState.gameEnded || gameState.currentPlayer !== 2) return;
 
-    const rollAndDecide = () => {
+    const takeAction = () => {
         if (gameState.rollsLeft === 0) {
             chooseCategoryForComputer();
             return;
         }
 
         rollDice();
+        holdDiceForComputer();
 
-        if (gameState.rollsLeft > 0) {
-            const counts = [0,0,0,0,0,0,0];
-            for (const d of gameState.dice) counts[d]++;
-            const bestVal = counts.indexOf(Math.max(...counts.slice(1)));
-            gameState.heldDice = gameState.dice.map(v => v === bestVal);
-            diceElements.forEach((die, idx) => {
-                if (gameState.heldDice[idx]) die.classList.add('held');
-                else die.classList.remove('held');
-            });
+        if (gameState.rollsLeft === 0) {
+            setTimeout(chooseCategoryForComputer, COMPUTER_DELAY);
+        } else {
+            setTimeout(takeAction, COMPUTER_DELAY);
         }
-
-        setTimeout(rollAndDecide, 600);
     };
 
-    rollAndDecide();
+    takeAction();
 }
 
 function chooseCategoryForComputer() {
-    const potentials = calculatePotentialScores();
-    let bestCategory = null;
-    let bestScore = -1;
-    for (const [cat, score] of Object.entries(potentials)) {
-        if (gameState.scores.player2[cat] === null && score > bestScore) {
-            bestScore = score;
-            bestCategory = cat;
+    const playerKey = 'player2';
+    const counts = countDiceValues(gameState.dice);
+    const open = getOpenBoxes(playerKey);
+    const sum = gameState.dice.reduce((a,b)=>a+b,0);
+    const upperTotal = getUpperTotal(playerKey);
+    const extraYahtzee = hasNOfAKind(counts,5) && gameState.scores[playerKey].yahtzee === 50;
+    let potentials = calculatePotentialScores();
+
+    if (extraYahtzee) {
+        potentials = Object.assign({}, potentials, {
+            'full-house': 25,
+            'small-straight': 30,
+            'large-straight': 40,
+            'three-kind': sum,
+            'four-kind': sum
+        });
+    }
+
+    const exactOrder = [
+        'yahtzee',
+        'large-straight',
+        'full-house',
+        'four-kind',
+        'small-straight'
+    ];
+
+    for (const cat of exactOrder) {
+        if (open[cat]) {
+            if (extraYahtzee || potentials[cat] > 0) {
+                return scoreCategory(cat);
+            }
         }
     }
-    if (bestCategory) {
-        scoreCategory(bestCategory);
+
+    const need = Math.max(0, 63 - upperTotal);
+    if (need > 0) {
+        const upperCats = ['sixes','fives','fours','threes','twos','ones'];
+        let choice = null;
+        let pts = 0;
+        for (const cat of upperCats) {
+            if (open[cat]) {
+                const val = {'ones':1,'twos':2,'threes':3,'fours':4,'fives':5,'sixes':6}[cat];
+                const sc = counts[val]*val;
+                if (sc >= need && sc > pts) {
+                    pts = sc;
+                    choice = cat;
+                }
+            }
+        }
+        if (choice) return scoreCategory(choice);
+    }
+
+    if (open['three-kind'] && hasNOfAKind(counts,3)) {
+        if (!open['chance'] || potentials['three-kind'] >= potentials['chance']) return scoreCategory('three-kind');
+    }
+
+    if (open['chance'] && sum >= 20) return scoreCategory('chance');
+
+    const sacrificeOrder = ['ones','twos','threes','fours','small-straight','full-house','three-kind','four-kind','chance','sixes','fives','large-straight','yahtzee'];
+    for (const cat of sacrificeOrder) {
+        if (open[cat]) return scoreCategory(cat);
     }
 }
 
-// End the game and show final results
 function endGame() {
     gameState.gameEnded = true;
     
