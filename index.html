@@ -590,7 +590,9 @@ const player1TurnIndicator = document.getElementById('player1-turn');
 const player2TurnIndicator = document.getElementById('player2-turn');
 const vsComputerCheckbox = document.getElementById('vs-computer');
 
+
 const COMPUTER_DELAY = 1200;
+=======
 // Initialize the game
 function initGame() {
     vsComputer = vsComputerCheckbox.checked;
@@ -1134,7 +1136,9 @@ function nextTurn() {
     showMessage(`Player ${gameState.currentPlayer}'s turn. Roll the dice.`);
 
     if (vsComputer && gameState.currentPlayer === 2) {
+
         setTimeout(computerTurn, COMPUTER_DELAY);
+
     }
 }
 
@@ -1152,6 +1156,7 @@ function updatePlayerTurnIndicator() {
         player2TurnIndicator.textContent = 'Current Turn';
     }
 }
+
 
 // End the game and show final results
 function computerTurn() {
@@ -1240,6 +1245,7 @@ function chooseCategoryForComputer() {
         if (open[cat]) return scoreCategory(cat);
     }
 }
+
 function endGame() {
     gameState.gameEnded = true;
     
