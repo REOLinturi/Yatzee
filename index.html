@@ -23,7 +23,10 @@
                 <span id="player2-turn" class="inactive-player">Waiting</span>
             </div>
         </div>
-        
+        <div class="computer-toggle">
+            <label><input type="checkbox" id="vs-computer"> Play vs Computer</label>
+        </div>
+
         <div class="game-area">
             <div class="dice-area">
                 <h2>Dice</h2>
@@ -169,6 +172,8 @@
         </div>
         
         <button id="new-game-button">New Game</button>
+        <button id="new-series-button">New Series</button>
+        <div id="series-score">Series score: 0 - 0</div>
         
         <div class="rules-toggle">
             <button id="rules-button">Show/Hide Rules</button>
@@ -313,6 +318,15 @@ h1 {
     transition: all 0.2s;
 }
 
+@keyframes roll {
+    from { transform: rotateY(0deg) rotateX(0deg); }
+    to { transform: rotateY(360deg) rotateX(360deg); }
+}
+
+.die.rolling {
+    animation: roll 0.5s;
+}
+
 .die.held {
     background-color: #ffdddd;
     border-color: #ff5555;
@@ -430,6 +444,33 @@ h1 {
     background-color: #d32f2f;
 }
 
+#new-series-button {
+    display: block;
+    margin: 10px auto;
+    padding: 8px 16px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#new-series-button:hover {
+    background-color: #1976d2;
+}
+
+#series-score {
+    text-align: center;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.computer-toggle {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
 .rules-toggle {
     margin-top: 20px;
 }
@@ -489,6 +530,8 @@ h1 {
 
 <script>
 // Game state variables
+let seriesState = { gamesPlayed: 0, player1Wins: 0, player2Wins: 0 };
+let vsComputer = false;
 let gameState = {
     currentPlayer: 1,
     rollsLeft: 3,
@@ -539,13 +582,26 @@ const rollButton = document.getElementById('roll-button');
 const rollsLeftSpan = document.getElementById('rolls-left');
 const messageBox = document.getElementById('message-box');
 const newGameButton = document.getElementById('new-game-button');
+const newSeriesButton = document.getElementById('new-series-button');
+const seriesScoreDiv = document.getElementById('series-score');
 const rulesButton = document.getElementById('rules-button');
 const rulesSection = document.getElementById('rules-section');
 const player1TurnIndicator = document.getElementById('player1-turn');
 const player2TurnIndicator = document.getElementById('player2-turn');
+const vsComputerCheckbox = document.getElementById('vs-computer');
 
 // Initialize the game
 function initGame() {
+    vsComputer = vsComputerCheckbox.checked;
+    if (vsComputer) {
+        document.getElementById('player2').value = 'Computer';
+        document.getElementById('player2').disabled = true;
+    } else {
+        document.getElementById('player2').disabled = false;
+    }
+
+    seriesScoreDiv.textContent = `Series score: ${seriesState.player1Wins} - ${seriesState.player2Wins}`;
+
     gameState = {
         currentPlayer: 1,
         rollsLeft: 3,
@@ -614,7 +670,9 @@ function rollDice() {
     // Roll only the dice that are not held
     for (let i = 0; i < gameState.dice.length; i++) {
         if (!gameState.heldDice[i]) {
+            diceElements[i].classList.add('rolling');
             gameState.dice[i] = Math.floor(Math.random() * 6) + 1;
+            setTimeout(() => diceElements[i].classList.remove('rolling'), 500);
         }
     }
     
@@ -648,9 +706,10 @@ function updateDiceDisplay() {
 // Toggle holding a die
 function toggleHoldDie(index) {
     if (gameState.rollsLeft === 3 || gameState.rollsLeft <= 0 || gameState.gameEnded) return;
-    
+
     gameState.heldDice[index] = !gameState.heldDice[index];
     diceElements[index].classList.toggle('held');
+    showPotentialScores();
 }
 
 // Update the rolls left display
@@ -891,6 +950,10 @@ function nextTurn() {
     
     // Show message for next player
     showMessage(`Player ${gameState.currentPlayer}'s turn. Roll the dice.`);
+
+    if (vsComputer && gameState.currentPlayer === 2) {
+        setTimeout(computerTurn, 500);
+    }
 }
 
 // Update the player turn indicator
@@ -905,6 +968,50 @@ function updatePlayerTurnIndicator() {
         player1TurnIndicator.textContent = 'Waiting';
         player2TurnIndicator.className = 'active-player';
         player2TurnIndicator.textContent = 'Current Turn';
+    }
+}
+
+// Simple computer turn logic
+function computerTurn() {
+    if (!vsComputer || gameState.gameEnded || gameState.currentPlayer !== 2) return;
+
+    const rollAndDecide = () => {
+        if (gameState.rollsLeft === 0) {
+            chooseCategoryForComputer();
+            return;
+        }
+
+        rollDice();
+
+        if (gameState.rollsLeft > 0) {
+            const counts = [0,0,0,0,0,0,0];
+            for (const d of gameState.dice) counts[d]++;
+            const bestVal = counts.indexOf(Math.max(...counts.slice(1)));
+            gameState.heldDice = gameState.dice.map(v => v === bestVal);
+            diceElements.forEach((die, idx) => {
+                if (gameState.heldDice[idx]) die.classList.add('held');
+                else die.classList.remove('held');
+            });
+        }
+
+        setTimeout(rollAndDecide, 600);
+    };
+
+    rollAndDecide();
+}
+
+function chooseCategoryForComputer() {
+    const potentials = calculatePotentialScores();
+    let bestCategory = null;
+    let bestScore = -1;
+    for (const [cat, score] of Object.entries(potentials)) {
+        if (gameState.scores.player2[cat] === null && score > bestScore) {
+            bestScore = score;
+            bestCategory = cat;
+        }
+    }
+    if (bestCategory) {
+        scoreCategory(bestCategory);
     }
 }
 
@@ -926,10 +1033,36 @@ function endGame() {
         winnerMessage = `Game over! It's a tie with both players scoring ${player1Total} points!`;
     }
     
+    seriesState.gamesPlayed++;
+    if (player1Total > player2Total) {
+        seriesState.player1Wins++;
+    } else if (player2Total > player1Total) {
+        seriesState.player2Wins++;
+    }
+    seriesScoreDiv.textContent = `Series score: ${seriesState.player1Wins} - ${seriesState.player2Wins}`;
+
+    if (seriesState.gamesPlayed >= 5) {
+        let seriesMsg;
+        if (seriesState.player1Wins > seriesState.player2Wins) {
+            seriesMsg = `${document.getElementById('player1').value} wins the series!`;
+        } else if (seriesState.player2Wins > seriesState.player1Wins) {
+            seriesMsg = `${document.getElementById('player2').value} wins the series!`;
+        } else {
+            seriesMsg = 'Series ends in a tie!';
+        }
+        winnerMessage += ' ' + seriesMsg;
+    }
+
     showMessage(winnerMessage);
     
     // Disable roll button
     rollButton.disabled = true;
+}
+
+function resetSeries() {
+    seriesState = { gamesPlayed: 0, player1Wins: 0, player2Wins: 0 };
+    seriesScoreDiv.textContent = 'Series score: 0 - 0';
+    initGame();
 }
 
 // Event Listeners
@@ -942,6 +1075,12 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // New game button click event
     newGameButton.addEventListener('click', initGame);
+
+    // New series button click event
+    newSeriesButton.addEventListener('click', resetSeries);
+
+    // Change of vs computer checkbox
+    vsComputerCheckbox.addEventListener('change', resetSeries);
     
     // Rules button click event
     rulesButton.addEventListener('click', () => {
